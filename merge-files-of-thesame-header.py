@@ -1,13 +1,13 @@
 import pandas as pd
 import os
 
-def combine_excel_files(input_folder, output_folder, output_filename="combined_data.xlsx"):
+def combine_excel_files(input_folder, output_folder, output_filename="Week_W19_combined_data.xlsx"):
     
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
     # list of all Excel files in the input folder
-    excel_files = [f for f in os.listdir(input_folder) if f.endswith(('.xls', '.xlsx', '.csv'))]
+    excel_files = [os.path.join(input_folder, f) for f in os.listdir(input_folder) if f.endswith(('.xls', '.xlsx', 'csv'))]
 
     if not excel_files:
         print("No Excel files found in the specified input folder.")
@@ -17,17 +17,25 @@ def combine_excel_files(input_folder, output_folder, output_filename="combined_d
 
     # Loop through each file, read it into a DataFrame, and append to the list
     for file in excel_files:
-        file_path = os.path.join(input_folder, file)
-        if file_path.endswith('.csv'):
-            df= pd.read_csv(file_path)
-        else:
-            df = pd.read_excel(file_path)
-        all_data.append(df)
+        try:
+            if file.endswith('.csv'):
+                data = pd.read_csv(file, encoding='latin1', on_bad_lines='skip')
+            elif file.endswith('.xlsx'):
+                data = pd.read_excel(file, engine='openpyxl')
+            else:
+                continue
+            all_data.append(data)
+        
 
-    
-    combined_df = pd.concat(all_data, ignore_index=True)
+            data['Filename'] = os.path.basename(file)
+            combined_df = pd.concat(all_data, ignore_index=True)
+        except Exception as e:
+            print(f"Error processing file {file}: {e}")
 
-    # output path
+
+    combined_df['ProjectName'] = combined_df['Filename'].str.split('_').str[0]
+
+    # Define the output path
     output_path = os.path.join(output_folder, output_filename)
 
     # Save the combined DataFrame to a new Excel file
@@ -38,7 +46,7 @@ def combine_excel_files(input_folder, output_folder, output_filename="combined_d
 
 if __name__ == "__main__":
     
-    input_folder_path = 'C:/Users/DELL/Documents/DataFi/Client_level_analysis/Centralsync'
-    output_folder_path = 'C:/Users/DELL/Documents/DataFi/Client_level_analysis'
+    input_folder_path = 'C:/Users/oluwabukola.arowolo/OneDrive - Palladium International, LLC/Documents/DataFi/Centralsync Upload Monitoring/Week_W19'
+    output_folder_path = 'C:/Users/oluwabukola.arowolo/OneDrive - Palladium International, LLC/Documents/DataFi/Centralsync Upload Monitoring/output'
 
     combine_excel_files(input_folder_path, output_folder_path)
